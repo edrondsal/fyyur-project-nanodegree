@@ -10,3 +10,8 @@ Fyyur
 5. Implement CRUD Methods for Shows, update CRUD Methods of Venues and Artits when necessary to take into account the relationships
 
 
+### Status
+1. DONE
+2. DONE
+3. DONE
+
