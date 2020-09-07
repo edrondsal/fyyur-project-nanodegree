@@ -30,6 +30,7 @@ migrate = Migrate(app,db)
 # Models.
 #----------------------------------------------------------------------------#
 
+#Many to Many tables
 venues_show_items = db.Table('venue_show_items',
     db.Column('show_id', db.Integer, db.ForeignKey('Show.id'), primary_key=True),
     db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True),
@@ -118,8 +119,12 @@ def index():
 
 @app.route('/venues')
 def venues():
+  """Get the entire venues list
+    Keyword arguments:
+  """
   venues = Venue.query.order_by(Venue.city,Venue.state).all()
   data = []
+  #sort in function of city and states
   for venue in venues:
     foundLocation = False
     for location in data:
@@ -147,11 +152,16 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
+  """Get the entire venues list for a certain search word
+    Keyword arguments:
+  """
   # seach for venues with column Name containing word in "sear_term" 
   search_term = request.form['search_term']
   search = f'%{search_term}%'
+  #query the venue with WHERE LIKE case insentive
   venues = Venue.query.filter(Venue.name.ilike(search)).all()
   
+  #start the response structure
   response={
     "count": len(venues),
     "data": [],
@@ -159,6 +169,7 @@ def search_venues():
   
   currentDatetime = datetime.now()
 
+  #set  upcoming shows for the list of venues
   for venue in venues:
     upcomingShows = 0
     for show in venue.shows: 
@@ -175,7 +186,12 @@ def search_venues():
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
+  """Get the entire venue for a venue id
+    Keyword arguments:
+    venue_id -- the integer id of the venue
+  """
   # shows the venue page with the given venue_id
+  # query the venue by id
   venue = Venue.query.get(venue_id)
   if venue is None:
     flash(f'An error occurred. Venue with ID= {venue_id} does not exist.')
@@ -186,12 +202,15 @@ def show_venue(venue_id):
     past_shows = []
     artists_ids = []
    
+    #get all artist id for the shows of the venue
     for show in venue.shows:
       if show.artist_id not in artists_ids:
         artists_ids.append(show.artist_id)
     
+    #query all artist with id in the array of ids
     artists = db.session.query(Artist.id,Artist.name,Artist.image_link).filter(Artist.id.in_(artists_ids)).order_by(Artist.id).all()
 
+    #set the upcoming shows and past shows for the venue
     for show in venue.shows:
       past = currentDatetime > show.start_time
       showStruct = {
@@ -206,6 +225,7 @@ def show_venue(venue_id):
         past_shows.append(showStruct)
       else:
         upcoming_shows.append(showStruct)
+    #set the struct to return    
     data = {
       "id": venue.id,
       "name": venue.name,
@@ -233,6 +253,9 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
+  """Get the entire venue for a venue id
+     create the venue from teh request form
+  """
   error = False
   idToreturn = 1
   try:
@@ -265,7 +288,12 @@ def create_venue_submission():
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
+  """Edit the venue for a venue id
+    Keyword arguments:
+    venue_id -- the integer id of the venue
+  """
   form = VenueForm()
+  #query the item to edit
   venue = Venue.query.filter_by(id = venue_id).first()
   if venue is None:
     flash(f'An error occurred. Venue with ID= {venue_id} does not exist.')
@@ -275,6 +303,10 @@ def edit_venue(venue_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
+  """Edit entire venue for a venue id with the information from the request form
+    Keyword arguments:
+    venue_id -- the integer id of the venue
+  """
   error = False
   try:
     venueDict = request.form
@@ -303,6 +335,10 @@ def edit_venue_submission(venue_id):
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
+  """Delet the venue for a venue id
+    Keyword arguments:
+    venue_id -- the integer id of the venue
+  """
   error = False
   try:
     Venue.query.filter_by(id=venue_id).delete()
@@ -323,6 +359,9 @@ def delete_venue(venue_id):
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
+  """Get the entire artists list
+    Keyword arguments:
+  """
   # Query all Artist in database
   artists = Artist.query.all()
   data = []
@@ -336,7 +375,13 @@ def artists():
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # seach for venues with column Name containing word in "sear_term" 
+  """Get the entire artist list for a certain search word
+    Keyword arguments:
+  """
+  # seach for artist with column Name containing word in "sear_term" 
+  search_term = request.form['search_term']
+  search = f'%{search_term}%'
+  #query the artist with WHERE LIKE case insentive 
   search_term = request.form['search_term']
   search = f'%{search_term}%'
   artists = Artist.query.filter(Artist.name.ilike(search)).all()
@@ -362,6 +407,12 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
+  """Get the artist for a artist id
+    Keyword arguments:
+    artist_id -- the integer id of the artist
+  """
+  
+  # query the artist by id
   # shows the artist page with the given artist_id
   artist = Artist.query.get(artist_id)
   if artist is None:
@@ -373,10 +424,12 @@ def show_artist(artist_id):
     past_shows = []
     venues_ids = []
    
+    #get the list of venues ids
     for show in artist.shows:
       if show.venue_id not in venues_ids:
         venues_ids.append(show.venue_id)
     
+    #query the venues with id in the query list of ids
     venues = db.session.query(Venue.id,Venue.name,Venue.image_link).filter(Venue.id.in_(venues_ids)).order_by(Venue.id).all()
     
     for show in artist.shows:
@@ -419,6 +472,9 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
+  """Create artist from a request form
+    Keyword arguments:
+  """
   # called upon submitting the new artist listing form
   error = False
   idToreturn = 1
@@ -451,6 +507,10 @@ def create_artist_submission():
 
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
+  """Render the template of the artist to edit for a artist id
+    Keyword arguments:
+    artist_id -- the integer id of the artist
+  """
   form = ArtistForm()
   artist = Artist.query.filter_by(id = artist_id).first()
   if artist is None:
@@ -461,6 +521,10 @@ def edit_artist(artist_id):
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
+  """Edit the artist for a artist id with request form
+    Keyword arguments:
+    artist_id -- the integer id of the artist
+  """
   # update artist record with ID <artist_id> using the new attributes
   error = False
   try:
@@ -493,7 +557,10 @@ def edit_artist_submission(artist_id):
 
 @app.route('/shows')
 def shows():
+  """render the entire list of shows
+  """
   # displays list of shows at /shows
+  #query of all showsand the data for the venue and artist for each show
   elements = db.session.query(Shows.id,Venue.id,Artist.id,Venue.name,Artist.name,Artist.image_link,Shows.start_time).all()
   data=[]
   for element in elements:
@@ -516,6 +583,8 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
+  """Create the show from a request form
+  """
   # called to create new shows in the db, upon submitting new show listing form
   error = False
   try:
